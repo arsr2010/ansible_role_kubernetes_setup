@@ -1,0 +1,37 @@
+---
+kubernetes_common:
+  hosts:
+    - name: k8s-master
+      ip: 192.168.1.115
+
+kubernetes_master:
+  hostname: k8s-master
+  api_port: 8080
+  kubelet_port: 10250
+  service_cluster_network: 10.254.0.0/19
+  cert_and_key:
+    put_dir: /etc/kubernetes/ssl
+    valid_term: 7305
+    common_name: 192.168.1.115
+  etcd_mgmt_dir: /kube-centos/network
+  allow_privileged: true
+
+kubernetes_minion:
+  hostname: k8s-master
+  kubelet_port: 10250
+  allow_privileged: true
+  master:
+    hostname: k8s-master
+    api_port: 8080
+    etcd_mgmt_dir: /kube-centos/network
+
+kubernetes_setup:
+  master:
+    ip: 192.168.1.115
+    api_port: 8080
+  kubectl:
+    cluster_name: default-cluster
+    context:
+      name: default-context
+      user: default-admin
+      namespace: default-namespace

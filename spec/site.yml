@@ -1,0 +1,6 @@
+---
+- hosts: all
+  roles:
+    - bbrfkr.kubernetes_master
+    - bbrfkr.kubernetes_minion
+    - bbrfkr.kubernetes_setup

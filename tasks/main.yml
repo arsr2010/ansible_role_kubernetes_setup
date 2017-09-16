@@ -1,0 +1,63 @@
+---
+- name: check cluster
+  shell: kubectl config get-clusters | grep {{ kubernetes_setup.kubectl.cluster_name }}
+  changed_when: false
+  failed_when: false
+  register: reg_cluster
+  become: yes
+
+- name: create cluster
+  shell: >
+    kubectl config set-cluster {{ kubernetes_setup.kubectl.cluster_name }} \
+      --server=http://{{ kubernetes_setup.master.ip }}:{{ kubernetes_setup.master.api_port }}
+  become: yes
+  when: reg_cluster.rc != 0
+
+- name: check context
+  shell: kubectl config get-contexts | grep {{ kubernetes_setup.kubectl.context.name }}
+  changed_when: false
+  failed_when: false
+  register: reg_context
+  become: yes
+
+- name: create context
+  shell: >
+    kubectl config set-context {{ kubernetes_setup.kubectl.context.name }} \
+      --cluster={{ kubernetes_setup.kubectl.cluster_name }} \
+      --user={{ kubernetes_setup.kubectl.context.user }} \
+      --namespace={{ kubernetes_setup.kubectl.context.namespace }}
+  become: yes
+  when: reg_context.rc != 0
+
+- name: check target context is current
+  shell: >
+    kubectl config get-contexts | \
+      grep {{ kubernetes_setup.kubectl.context.name }} | \
+      grep -e "^\*"
+  changed_when: false
+  failed_when: false
+  register: reg_current_context
+  become: yes
+
+- name: set target context current
+  shell: kubectl config use-context {{ kubernetes_setup.kubectl.context.name }}
+  become: yes
+  when: reg_current_context.rc != 0
+
+- name: put dashboard construction file
+  template:
+    src: kubernetes-dashboard-no-rbac.yaml.j2
+    dest: /tmp/kubernetes-dashboard-no-rbac.yaml
+  become: yes
+
+- name: check dashboard is deployed
+  shell: kubectl get deployments -n kube-system | grep kubernetes-dashboard
+  changed_when: false
+  failed_when: false
+  register: reg_dashboard
+  become: yes
+
+- name: deploy dashboard
+  shell: kubectl create -f /tmp/kubernetes-dashboard-no-rbac.yaml
+  become: yes
+  when: reg_dashboard.rc != 0
